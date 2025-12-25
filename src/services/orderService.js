@@ -1,0 +1,69 @@
+// Order service to manage orders
+import axios from "axios";
+
+const BASE_URL = "https://ecommerce-node-api-1-8ug3.onrender.com/api";
+
+// Place an order
+export const placeOrder = async (userId, orderItems) => {
+  try {
+    // Format items for API - ensure product_id is used
+    const formattedItems = orderItems.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price,
+      ...(item.size && { size: item.size })
+    }));
+
+    const response = await axios.post(`${BASE_URL}/orders/${userId}`, {
+      items: formattedItems
+    });
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || "Order placed successfully",
+        order: response.data.data
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data.message || "Order placement failed"
+      };
+    }
+  } catch (error) {
+    console.error("Error placing order:", error);
+    console.error("Error response:", error.response?.data);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Failed to place order. Please try again."
+    };
+  }
+};
+
+// Fetch orders for a user
+export const fetchUserOrders = async (userId) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/orders/user/${userId}`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        orders: response.data.data || response.data.orders || []
+      };
+    } else {
+      return {
+        success: false,
+        orders: [],
+        message: response.data.message || "Failed to fetch orders"
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return {
+      success: false,
+      orders: [],
+      message: error.response?.data?.message || error.message || "Failed to fetch orders. Please try again."
+    };
+  }
+};
+
