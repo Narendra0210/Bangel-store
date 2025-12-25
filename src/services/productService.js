@@ -43,16 +43,18 @@ const transformApiItemsToProducts = (apiItems, apiCategories) => {
 
   // Transform items to products
   return apiItems.map((item, index) => {
-    const price = parseFloat(item.price) || 0;
-    const mrp = Math.round(price * 1.5); // Calculate MRP as 50% markup
+    const originalPrice = parseFloat(item.price) || 0;
+    const discountedPrice = parseFloat(item.discounted_price) || originalPrice;
+    const discountPercent = parseFloat(item.discount_percent) || 0;
     const categoryName = categoryMap[item.category_id] || "Other";
     const image = getProductImage(item.item_id);
 
     return {
       id: item.item_id,
       name: item.item_name,
-      price: price,
-      mrp: mrp,
+      price: originalPrice, // Original price (to be shown crossed out)
+      discounted_price: discountedPrice, // Discounted price (main price to display)
+      discount_percent: discountPercent, // Discount percentage
       category: categoryName,
       image: image,
       images: [image, image],

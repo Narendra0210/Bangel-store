@@ -146,7 +146,10 @@ const Home = () => {
   };
 
   const formatPrice = (price) => {
-    return `₹${price.toLocaleString("en-IN")}`;
+    if (price === undefined || price === null || isNaN(price)) {
+      return "₹0";
+    }
+    return `₹${Number(price).toLocaleString("en-IN")}`;
   };
 
   return (
@@ -228,7 +231,20 @@ const Home = () => {
                         </div>
                         <div className="product-info">
                           <h3 className="product-name">{product.name}</h3>
-                          <p className="product-price">{formatPrice(product.price)}</p>
+                          <div className="product-pricing">
+                            <div className="price-row">
+                              <span className="discounted-price">{formatPrice(product.discounted_price || product.price)}</span>
+                              {product.discounted_price && product.price && 
+                               Number(product.discounted_price) < Number(product.price) && (
+                                <>
+                                  <span className="original-price">{formatPrice(product.price)}</span>
+                                  {product.discount_percent > 0 && (
+                                    <span className="discount-badge">{product.discount_percent}% OFF</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </Link>

@@ -84,11 +84,17 @@ const ProductDetail = () => {
   }
 
   const formatPrice = (price) => {
-    return `₹${price.toLocaleString("en-IN")}`;
+    if (price === undefined || price === null || isNaN(price)) {
+      return "₹0";
+    }
+    return `₹${Number(price).toLocaleString("en-IN")}`;
   };
 
-  const discount = product.mrp - product.price;
-  const discountPercentage = Math.round((discount / product.mrp) * 100);
+  const discountedPrice = Number(product.discounted_price) || Number(product.price) || 0;
+  const originalPrice = Number(product.price) || 0;
+  const discountPercent = Number(product.discount_percent) || 0;
+  const discount = originalPrice - discountedPrice;
+  const discountPercentage = originalPrice > 0 ? Math.round((discount / originalPrice) * 100) : 0;
 
   const handleAddToBag = async () => {
     if (product) {
@@ -214,14 +220,20 @@ const ProductDetail = () => {
 
             {/* Price */}
             <div className="product-price-section">
-              <div className="current-price">{formatPrice(product.price)}</div>
-              <div className="mrp">
-                <span className="mrp-label">MRP</span>
-                <span className="mrp-value">{formatPrice(product.mrp)}</span>
-              </div>
-              <div className="discount">
-                (₹{discount.toLocaleString("en-IN")} OFF - {discountPercentage}%)
-              </div>
+              <div className="current-price">{formatPrice(discountedPrice)}</div>
+              {discountedPrice < originalPrice && originalPrice > 0 && (
+                <>
+                  <div className="mrp">
+                    <span className="mrp-label">MRP</span>
+                    <span className="mrp-value" style={{ textDecoration: 'line-through' }}>{formatPrice(originalPrice)}</span>
+                  </div>
+                  {(discount > 0 || discountPercent > 0) && (
+                    <div className="discount">
+                      (₹{Number(discount).toLocaleString("en-IN")} OFF - {discountPercent > 0 ? discountPercent : discountPercentage}%)
+                    </div>
+                  )}
+                </>
+              )}
               <div className="tax-info">inclusive of all taxes</div>
             </div>
 

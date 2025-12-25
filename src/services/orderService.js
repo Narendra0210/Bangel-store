@@ -67,3 +67,30 @@ export const fetchUserOrders = async (userId) => {
   }
 };
 
+// Fetch order details by order ID
+export const fetchOrderById = async (orderId) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/orders/${orderId}`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        order: response.data.data || response.data.order
+      };
+    } else {
+      return {
+        success: false,
+        order: null,
+        message: response.data.message || "Failed to fetch order details"
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    return {
+      success: false,
+      order: null,
+      message: error.response?.data?.message || error.message || "Failed to fetch order details. Please try again."
+    };
+  }
+};
+

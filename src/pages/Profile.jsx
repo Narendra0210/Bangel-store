@@ -71,7 +71,10 @@ const Profile = () => {
   };
 
   const formatPrice = (price) => {
-    return `₹${price.toLocaleString("en-IN")}`;
+    if (price === undefined || price === null || isNaN(price)) {
+      return "₹0";
+    }
+    return `₹${Number(price).toLocaleString("en-IN")}`;
   };
 
   if (loading) {
@@ -106,10 +109,10 @@ const Profile = () => {
           </div>
           <div className="profile-info">
             <h1 className="profile-name">
-              {user?.name || user?.username || user?.email?.split("@")[0] || "User"}
+              {user?.full_name || user?.name || user?.username || user?.email?.split("@")[0] || "User"}
             </h1>
             <p className="profile-email">{user?.email || "No email"}</p>
-            {user?.phone && <p className="profile-phone">{user.phone}</p>}
+            {(user?.phone || user?.mobile) && <p className="profile-phone">{user.phone || user.mobile}</p>}
           </div>
         </div>
 
@@ -146,17 +149,17 @@ const Profile = () => {
             <div className="detail-item">
               <span className="detail-label">Name:</span>
               <span className="detail-value">
-                {user?.name || user?.username || "Not provided"}
+                {user?.full_name || user?.name || user?.username || "Not provided"}
               </span>
             </div>
             <div className="detail-item">
               <span className="detail-label">Email:</span>
               <span className="detail-value">{user?.email || "Not provided"}</span>
             </div>
-            {user?.phone && (
+            {(user?.phone || user?.mobile) && (
               <div className="detail-item">
                 <span className="detail-label">Phone:</span>
-                <span className="detail-value">{user.phone}</span>
+                <span className="detail-value">{user.phone || user.mobile}</span>
               </div>
             )}
             {user?.address && (

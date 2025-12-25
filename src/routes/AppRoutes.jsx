@@ -6,6 +6,7 @@ import OrderDetails from "../pages/OrderDetails";
 import Wishlist from "../pages/Wishlist";
 import Profile from "../pages/Profile";
 import OrderHistory from "../pages/OrderHistory";
+import OrderedItems from "../pages/OrderedItems";
 import { useAuth } from "../context/AuthContext";
 
 const PrivateRoute = ({ children }) => {
@@ -75,6 +76,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <OrderHistory />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ordered-items/:orderId"
+          element={
+            <PrivateRoute>
+              <OrderedItems />
             </PrivateRoute>
           }
         />

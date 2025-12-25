@@ -146,8 +146,7 @@ const OrderHistory = () => {
                   <button
                     className="view-order-btn"
                     onClick={() => {
-                      // Navigate to order details page if needed
-                      showToast("Order details feature coming soon", "info");
+                      navigate(`/ordered-items/${order.order_id}`);
                     }}
                   >
                     View Details

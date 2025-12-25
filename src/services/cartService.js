@@ -66,7 +66,8 @@ export const addToCart = async (product, size = null, quantity = 1, userId = nul
   // If userId is provided, also sync with API
   if (userId) {
     try {
-      await addItemToCartAPI(userId, product.id, quantity, product.price);
+      const priceToUse = product.discounted_price || product.price;
+      await addItemToCartAPI(userId, product.id, quantity, priceToUse);
     } catch (error) {
       console.error("Failed to sync cart item to API, but kept in localStorage:", error);
       // Continue even if API call fails - localStorage is already updated
@@ -111,7 +112,8 @@ export const getCartCount = () => {
 // Get cart count from API (for real-time count from server)
 export const getCartCountFromAPI = async (userId) => {
   try {
-    const cartItems = await fetchCartItemsFromAPI(userId);
+    const response = await fetchCartItemsFromAPI(userId);
+    const cartItems = response.items || [];
     // Sum all quantities: if item 1 has qty 2 and item 2 has qty 3, total = 5
     return cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
   } catch (error) {
@@ -157,20 +159,24 @@ export const fetchCartItemsFromAPI = async (userId) => {
       
       if (!Array.isArray(apiCartItems) || apiCartItems.length === 0) {
         console.log("No cart items found in API response");
-        return [];
+        return { items: [], total_price: null };
       }
       
       console.log("Cart items array:", apiCartItems); // Debug log
       
+      // Get total_price from API response
+      const apiTotalPrice = response.data.total_price || response.data.totalPrice || null;
+      
       // Map API response to our cart item format
-      return apiCartItems.map(item => {
+      const mappedItems = apiCartItems.map(item => {
         // Handle different field name variations from API
         const itemId = item.product_id || item.item_id || item.id;
         const itemName = item.item_name || item.product_name || item.name;
-        const itemPrice = parseFloat(item.price || 0);
+        const originalPrice = parseFloat(item.price || 0);
+        const discountedPrice = parseFloat(item.discounted_price) || originalPrice;
+        const discountPercent = parseFloat(item.discount_percent) || 0;
         const itemQuantity = parseInt(item.quantity || 1);
         const itemSize = item.size || item.selectedSize || null;
-        const itemMRP = item.mrp ? parseFloat(item.mrp) : (itemPrice * 1.5); // Default MRP if not provided
         const itemDescription = item.description || item.item_name || item.product_name || item.name || "";
         const itemRating = item.rating || 4.0;
         const itemSizes = item.sizes || [];
@@ -181,8 +187,9 @@ export const fetchCartItemsFromAPI = async (userId) => {
         const mappedItem = {
           id: itemId,
           name: itemName,
-          price: itemPrice,
-          mrp: itemMRP,
+          price: originalPrice, // Original price (to be shown crossed out)
+          discounted_price: discountedPrice, // Discounted price (main price to display)
+          discount_percent: discountPercent, // Discount percentage
           quantity: itemQuantity,
           selectedSize: itemSize,
           image: image,
@@ -192,28 +199,31 @@ export const fetchCartItemsFromAPI = async (userId) => {
           sizes: itemSizes,
           category: itemCategory,
           order_item_id: item.order_item_id, // Keep order_item_id for reference
-          total_price: item.total_price ? parseFloat(item.total_price) : (itemPrice * itemQuantity)
+          total_price: item.total_price ? parseFloat(item.total_price) : (discountedPrice * itemQuantity)
         };
         
         console.log("Mapped item:", mappedItem); // Debug log
         return mappedItem;
       });
+      
+      return { items: mappedItems, total_price: apiTotalPrice };
     } else {
       console.log("API returned success: false");
-      return [];
+      return { items: [], total_price: null };
     }
   } catch (error) {
     console.error("Error fetching cart items:", error);
     console.error("Error details:", error.response?.data || error.message);
     // Return empty array on error to show API data only
-    return [];
+    return { items: [], total_price: null };
   }
 };
 
 // Sync cart items from API to localStorage (called after login)
 export const syncCartItemsFromAPI = async (userId) => {
   try {
-    const apiCartItems = await fetchCartItemsFromAPI(userId);
+    const response = await fetchCartItemsFromAPI(userId);
+    const apiCartItems = response.items || [];
     // Update localStorage with cart items from API
     localStorage.setItem("cart", JSON.stringify(apiCartItems));
     return apiCartItems;
