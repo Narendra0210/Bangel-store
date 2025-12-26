@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Clock } from "lucide-react";
 import { fetchOrderById } from "../services/orderService";
 import { addToCart, getCartCount, getCartCountFromAPI } from "../services/cartService";
 import { getProductImage } from "../services/productService";
+import { createRazorpayOrder, verifyPayment } from "../services/paymentService";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import Header from "../components/common/Header";
@@ -19,6 +20,8 @@ const OrderedItems = () => {
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
   const [categories, setCategories] = useState([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -63,6 +66,18 @@ const OrderedItems = () => {
     };
     updateCartCount();
   }, [user?.user_id]);
+
+  useEffect(() => {
+    // Check if Razorpay is loaded
+    const checkRazorpay = () => {
+      if (window.Razorpay) {
+        setRazorpayLoaded(true);
+      } else {
+        setTimeout(checkRazorpay, 100);
+      }
+    };
+    checkRazorpay();
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -138,6 +153,164 @@ const OrderedItems = () => {
     } catch (error) {
       console.error("Error adding to cart:", error);
       showToast("Failed to add item to cart", "error");
+    }
+  };
+
+  const handleMakePayment = async () => {
+    if (!order || !order.order_id) {
+      showToast("Order information is missing.", "error");
+      return;
+    }
+
+    if (!razorpayLoaded) {
+      showToast("Payment gateway is loading. Please wait a moment.", "warning");
+      return;
+    }
+
+    setPaymentLoading(true);
+
+    try {
+      // Call API to create Razorpay order
+      const response = await createRazorpayOrder(order.order_id);
+
+      if (!response.success) {
+        setPaymentLoading(false);
+        showToast(response.message || "Failed to initialize payment. Please try again.", "error");
+        return;
+      }
+
+      const razorpayData = response.data;
+      console.log("Razorpay API Response:", razorpayData);
+
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        setPaymentLoading(false);
+        showToast("Payment gateway is not available. Please refresh the page.", "error");
+        return;
+      }
+
+      // Get Razorpay order ID from response
+      const razorpayOrderId = razorpayData.id || razorpayData.order_id;
+      if (!razorpayOrderId) {
+        console.error("Razorpay order ID missing:", razorpayData);
+        setPaymentLoading(false);
+        showToast("Payment order creation failed. Please try again.", "error");
+        return;
+      }
+
+      // Get Razorpay key
+      const razorpayKey = 
+        razorpayData.key || 
+        razorpayData.razorpay_key || 
+        razorpayData.razorpayKey ||
+        razorpayData.public_key ||
+        process.env.REACT_APP_RAZORPAY_KEY;
+      
+      if (!razorpayKey) {
+        console.error("Razorpay key missing. Full response data:", razorpayData);
+        setPaymentLoading(false);
+        showToast("Payment configuration error: Razorpay key is missing. Please configure the Razorpay key.", "error");
+        return;
+      }
+
+      // Get amount from response (already in paise) or calculate from order
+      const amount = razorpayData.amount || (parseFloat(order.total_amount) * 100);
+      const currency = razorpayData.currency || "INR";
+
+      // Razorpay options
+      const options = {
+        key: razorpayKey,
+        amount: amount,
+        currency: currency,
+        name: "Bangle Store",
+        description: `Order #${order.order_number}`,
+        order_id: razorpayOrderId,
+        handler: async function (razorpayResponse) {
+          // Payment success handler
+          setPaymentLoading(true);
+          
+          try {
+            // Verify payment with backend
+            const verifyData = {
+              razorpay_order_id: razorpayOrderId,
+              razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+              razorpay_signature: razorpayResponse.razorpay_signature,
+              payment_status: "success"
+            };
+
+            const verifyResult = await verifyPayment(verifyData);
+            
+            if (verifyResult.success) {
+              showToast("Payment verified successfully! Your order is confirmed.", "success");
+              
+              // Navigate to home and clear history
+              setTimeout(() => {
+                navigate("/home", { replace: true });
+                if (window.history.length > 1) {
+                  window.history.replaceState(null, "", "/home");
+                }
+              }, 1500);
+            } else {
+              showToast(verifyResult.message || "Payment verification failed. Please contact support.", "error");
+              setPaymentLoading(false);
+            }
+          } catch (error) {
+            console.error("Error verifying payment:", error);
+            showToast("Payment completed but verification failed. Please contact support.", "error");
+            setPaymentLoading(false);
+          }
+        },
+        prefill: {
+          name: user?.name || user?.fullName || "",
+          email: user?.email || "",
+          contact: user?.phone || user?.contact || "",
+        },
+        notes: {
+          order_id: order.order_id,
+          order_number: order.order_number,
+        },
+        theme: {
+          color: "#2c5aa0",
+        },
+        modal: {
+          ondismiss: function () {
+            setPaymentLoading(false);
+            showToast("Payment cancelled.", "info");
+          },
+        },
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      razorpay.on("payment.failed", async function (response) {
+        setPaymentLoading(true);
+        
+        try {
+          const verifyData = {
+            razorpay_order_id: razorpayOrderId,
+            razorpay_payment_id: response.error?.metadata?.payment_id || null,
+            razorpay_signature: null,
+            payment_status: "failed"
+          };
+
+          await verifyPayment(verifyData);
+        } catch (error) {
+          console.error("Error verifying failed payment:", error);
+        }
+        
+        setPaymentLoading(false);
+        showToast(
+          response.error?.description || "Payment failed. Please try again.",
+          "error"
+        );
+      });
+
+      razorpay.open();
+      setPaymentLoading(false);
+    } catch (error) {
+      console.error("Error initiating payment:", error);
+      setPaymentLoading(false);
+      showToast("An error occurred while processing payment. Please try again.", "error");
     }
   };
 
@@ -411,13 +584,17 @@ const OrderedItems = () => {
                 Add More Items
               </button>
 
-              <button
-                className="place-order-btn"
-                onClick={() => navigate("/order-details")}
-                style={{ background: "#10b981" }}
-              >
-                Make a Payment
-              </button>
+              {/* Show Make Payment button only if order status is PENDING */}
+              {order.status?.toUpperCase() === "PENDING" && (
+                <button
+                  className="place-order-btn"
+                  onClick={handleMakePayment}
+                  disabled={paymentLoading || !razorpayLoaded}
+                  style={{ background: "#10b981" }}
+                >
+                  {paymentLoading ? "Processing..." : `Make Payment - ${formatPrice(totalAmount)}`}
+                </button>
+              )}
             </div>
           </div>
         </div>

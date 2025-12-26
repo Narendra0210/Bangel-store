@@ -7,6 +7,7 @@ import Wishlist from "../pages/Wishlist";
 import Profile from "../pages/Profile";
 import OrderHistory from "../pages/OrderHistory";
 import OrderedItems from "../pages/OrderedItems";
+import Payment from "../pages/Payment";
 import { useAuth } from "../context/AuthContext";
 
 const PrivateRoute = ({ children }) => {
@@ -84,6 +85,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <OrderedItems />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/payment"
+          element={
+            <PrivateRoute>
+              <Payment />
             </PrivateRoute>
           }
         />

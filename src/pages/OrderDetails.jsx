@@ -630,10 +630,22 @@ const OrderDetails = () => {
         // Clear selected items
         setSelectedItems(new Set());
         
-        // Navigate to home or order confirmation page after a short delay
-        setTimeout(() => {
-          navigate("/home");
-        }, 1500);
+        // Navigate to payment page with order data
+        if (response.order) {
+          setTimeout(() => {
+            navigate("/payment", {
+              state: {
+                orderData: response.order
+              }
+            });
+          }, 1000);
+        } else {
+          // Fallback if order data is not in expected format
+          showToast("Order placed but payment information is missing.", "warning");
+          setTimeout(() => {
+            navigate("/home");
+          }, 1500);
+        }
       } else {
         showToast(response.message || "Failed to place order. Please try again.", "error");
       }
