@@ -94,3 +94,113 @@ export const fetchOrderById = async (orderId) => {
   }
 };
 
+// Fetch all orders (for seller)
+export const fetchAllOrders = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/orders`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        orders: response.data.data || response.data.orders || []
+      };
+    } else {
+      return {
+        success: false,
+        orders: [],
+        message: response.data.message || "Failed to fetch orders"
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching all orders:", error);
+    return {
+      success: false,
+      orders: [],
+      message: error.response?.data?.message || error.message || "Failed to fetch orders. Please try again."
+    };
+  }
+};
+
+// Fetch paid orders (for seller)
+export const fetchPaidOrders = async () => {
+  try {
+    const response = await axios.get(`${BASE_URL}/seller/orders/paid`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        orders: response.data.data || response.data.orders || []
+      };
+    } else {
+      return {
+        success: false,
+        orders: [],
+        message: response.data.message || "Failed to fetch paid orders"
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching paid orders:", error);
+    return {
+      success: false,
+      orders: [],
+      message: error.response?.data?.message || error.message || "Failed to fetch paid orders. Please try again."
+    };
+  }
+};
+
+// Update order status (for seller)
+export const updateOrderStatus = async (orderId, status) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/orders/${orderId}/status`, {
+      status: status
+    });
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || "Order status updated successfully",
+        order: response.data.data || response.data.order
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data.message || "Failed to update order status"
+      };
+    }
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Failed to update order status. Please try again."
+    };
+  }
+};
+
+// Update ordered_status (for seller)
+export const updateOrderedStatus = async (orderId, orderedStatus) => {
+  try {
+    const response = await axios.put(`${BASE_URL}/seller/orders/${orderId}/ordered-status`, {
+      ordered_status: orderedStatus
+    });
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        message: response.data.message || "Order status updated successfully",
+        order: response.data.data || response.data.order
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data.message || "Failed to update order status"
+      };
+    }
+  } catch (error) {
+    console.error("Error updating ordered status:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Failed to update order status. Please try again."
+    };
+  }
+};
+

@@ -27,16 +27,28 @@ const LoginForm = ({ switchToRegister }) => {
     const response = await loginUser(email, password);
       if (response.success) {
         login(response.user, response.token);
-        // Sync cart items from API after login
-        if (response.user?.user_id) {
-          try {
-            await syncCartItemsFromAPI(response.user.user_id);
-          } catch (cartError) {
-            console.error("Error syncing cart items:", cartError);
-            // Continue with login even if cart sync fails
+        
+        // Check role from API response and redirect accordingly
+        const userRole = response.user?.role || response.role;
+        
+        if (userRole === 'seller') {
+          // Seller login - navigate to seller dashboard
+          navigate("/seller/dashboard");
+        } else if (userRole === 'user' || !userRole) {
+          // Regular user login - sync cart and navigate to home
+          if (response.user?.user_id) {
+            try {
+              await syncCartItemsFromAPI(response.user.user_id);
+            } catch (cartError) {
+              console.error("Error syncing cart items:", cartError);
+              // Continue with login even if cart sync fails
+            }
           }
+          navigate("/home");
+        } else {
+          // Unknown role - default to home
+          navigate("/home");
         }
-        navigate("/home");
       } else {
         setError(response.message || "Invalid credentials");
       }

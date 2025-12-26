@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Clock } from "lucide-react";
+import { Clock, CheckCircle, Package, Truck } from "lucide-react";
 import { fetchOrderById } from "../services/orderService";
 import { addToCart, getCartCount, getCartCountFromAPI } from "../services/cartService";
 import { getProductImage } from "../services/productService";
@@ -117,6 +117,30 @@ const OrderedItems = () => {
       default:
         return "#6b7280";
     }
+  };
+
+  // Order tracker steps
+  const trackerSteps = [
+    { key: "accepted", label: "Accepted", icon: CheckCircle },
+    { key: "packed", label: "Packed", icon: Package },
+    { key: "shipped", label: "Shipped", icon: Truck },
+    { key: "delivered", label: "Delivered", icon: CheckCircle }
+  ];
+
+  const getCurrentStatusIndex = () => {
+    const currentStatus = (order?.ordered_status || order?.status)?.toLowerCase();
+    const index = trackerSteps.findIndex(step => step.key === currentStatus);
+    return index >= 0 ? index : -1;
+  };
+
+  const isStepCompleted = (stepIndex) => {
+    const currentIndex = getCurrentStatusIndex();
+    return currentIndex > stepIndex;
+  };
+
+  const isStepActive = (stepIndex) => {
+    const currentIndex = getCurrentStatusIndex();
+    return currentIndex === stepIndex;
   };
 
   const handleAddToCart = async (item) => {
@@ -467,6 +491,52 @@ const OrderedItems = () => {
           </div>
         </div>
 
+        {/* Order Tracker - Only show if ordered_status exists and is not "pending" */}
+        {order.ordered_status && order.ordered_status?.toLowerCase() !== "pending" && (
+          <div className="order-tracker-section">
+            <h3 className="tracker-title">Order Tracking</h3>
+            <div className="order-tracker">
+              {trackerSteps.map((step, index) => {
+                const isCompleted = isStepCompleted(index);
+                const isActive = isStepActive(index);
+                const isPast = getCurrentStatusIndex() > index;
+                
+                return (
+                  <div key={step.key} className="tracker-step-wrapper">
+                    <div className="tracker-step">
+                      <div
+                        className={`tracker-icon ${isCompleted ? "completed" : ""} ${isActive ? "active" : ""}`}
+                        style={{
+                          backgroundColor: isCompleted ? "#10b981" : isActive ? "#3b82f6" : "#e5e7eb",
+                          color: isCompleted || isActive ? "white" : "#9ca3af"
+                        }}
+                      >
+                        <step.icon size={20} />
+                      </div>
+                      <div className="tracker-label">
+                        <span className={`tracker-label-text ${isCompleted || isActive ? "active" : ""}`}>
+                          {step.label}
+                        </span>
+                        {isActive && (
+                          <span className="tracker-status-badge">Current</span>
+                        )}
+                      </div>
+                    </div>
+                    {index < trackerSteps.length - 1 && (
+                      <div
+                        className={`tracker-line ${isPast ? "completed" : ""}`}
+                        style={{
+                          backgroundColor: isPast ? "#10b981" : "#e5e7eb"
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="order-details-wrapper">
           {/* Left Column - Order Items */}
           <div className="cart-items-section">
@@ -584,8 +654,9 @@ const OrderedItems = () => {
                 Add More Items
               </button>
 
-              {/* Show Make Payment button only if order status is PENDING */}
-              {order.status?.toUpperCase() === "PENDING" && (
+              {/* Show Make Payment button only if order status is PENDING and not PAID */}
+              {order.status?.toUpperCase() === "PENDING" && 
+               order.status?.toUpperCase() !== "PAID" && (
                 <button
                   className="place-order-btn"
                   onClick={handleMakePayment}
