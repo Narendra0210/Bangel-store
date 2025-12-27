@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
-import { FaRegHeart } from "react-icons/fa6";
+import { FaRegHeart, FaCartShopping, FaMagnifyingGlass } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
 
 const Header = ({
   pageType = "home", // 'home', 'product', 'wishlist', 'order', or null
@@ -45,32 +46,12 @@ const Header = ({
 
   return (
     <header className="home-header">
-      {/* Logo and Location Row - Mobile Only (Home page) */}
-      {pageType === "home" && showLocation && (
-        <div className="logo-location-row">
-          {/* Logo */}
-          <div className="logo-container">
-            <img src="/aurora-logo.png" alt="Aurora Bangles" className="logo" />
-          </div>
-
-          {/* Location Bar */}
-          <div className="location-bar">
-            <span className="location-icon">🏠</span>
-            <span className="location-text">
-              HOME 13, Mona luxury PG, Stage 2, 5th Cross...
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Search and Navigation Row */}
       <div className="search-nav-row">
-        {/* Logo - Mobile Only (when no address) */}
-        {pageType !== "home" && (
-          <div className="logo-container mobile-logo">
-            <img src="/aurora-logo.png" alt="Aurora Bangles" className="logo" />
-          </div>
-        )}
+        {/* Logo - Mobile Only */}
+        <div className="logo-container mobile-logo">
+          <img src="/aurora-logo.png" alt="Aurora Bangles" className="logo" />
+        </div>
 
         {/* Logo - Desktop Only */}
         <div className="logo-container desktop-logo">
@@ -80,7 +61,9 @@ const Header = ({
         {/* Search Bar */}
         <div className="search-bar-wrapper">
           <div className="search-bar">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon">
+              <FaMagnifyingGlass size={18} />
+            </span>
             <input
               type="text"
               placeholder={searchPlaceholder}
@@ -104,18 +87,29 @@ const Header = ({
                 ✕
               </button>
             )}
-            <span className="grid-icon">☰</span>
           </div>
-          {/* Search Suggestions - Only for Home page */}
+          {/* Search Suggestions - Only when showSearchSuggestions is true */}
           {showSearchSuggestions && showSuggestions && searchSuggestions.length > 0 && (
-            <div className="search-suggestions">
+            <div 
+              className="search-suggestions"
+              onMouseDown={(e) => {
+                // Prevent blur event from firing when clicking on suggestions
+                e.preventDefault();
+              }}
+            >
               {searchSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.id}
                   className="search-suggestion-item"
-                  onClick={() => onSuggestionClick(suggestion)}
+                  onMouseDown={(e) => {
+                    // Use onMouseDown instead of onClick to fire before blur
+                    e.preventDefault();
+                    onSuggestionClick(suggestion);
+                  }}
                 >
-                  <span className="suggestion-icon">🔍</span>
+                  <span className="suggestion-icon">
+                    <FaMagnifyingGlass size={16} />
+                  </span>
                   <span className="suggestion-text">{suggestion.name}</span>
                   <span className="suggestion-category">{suggestion.category}</span>
                 </div>
@@ -127,7 +121,9 @@ const Header = ({
         {/* Top Navigation - Desktop Only */}
         <nav className="top-nav">
           <div className="nav-item" onClick={() => navigate("/profile")}>
-            <span className="nav-icon">👤</span>
+            <span className="nav-icon">
+              <CgProfile size={20} />
+            </span>
             <span className="nav-label">Profile</span>
           </div>
           <div
@@ -143,11 +139,10 @@ const Header = ({
             className={`nav-item ${activeNavItem === "cart" ? "active" : ""}`}
             onClick={() => navigate("/order-details")}
           >
-            <span className="nav-icon">🛒</span>
+            <span className="nav-icon">
+              <FaCartShopping size={20} />
+            </span>
             <span className="nav-label">Cart</span>
-            {cartCount > 0 && (
-              <span className="cart-badge">{cartCount}</span>
-            )}
           </div>
           <div className="nav-item logout-item" onClick={handleLogout}>
             <span className="nav-icon">
@@ -158,8 +153,8 @@ const Header = ({
         </nav>
       </div>
 
-      {/* Category Navigation */}
-      {categories.length > 0 && (
+      {/* Category Navigation - Hide on product details page */}
+      {categories.length > 0 && pageType !== "product" && (
         <div className={`category-nav ${pageType === "home" ? "home-category-nav" : ""}`}>
           {categories.map((category) => (
             <div

@@ -1,5 +1,6 @@
 // Import API service
 import { fetchCategoriesAndItems } from "./categoryItemsService";
+import { invalidateProductIndex } from "./searchService";
 
 // All product images - defined in one place
 const PRODUCT_IMAGES = Array.from({ length: 20 }, (_, i) => `/bangle-${i + 1}.jpg`);
@@ -362,6 +363,8 @@ export const initializeProducts = async () => {
       }));
       isInitialized = true;
       isLoading = false;
+      // Invalidate search index when products are updated
+      invalidateProductIndex();
       return { success: true, products, categories };
     } else {
       // Fallback to mock data if API fails
@@ -376,6 +379,8 @@ export const initializeProducts = async () => {
       ];
       isInitialized = true;
       isLoading = false;
+      // Invalidate search index when products are updated
+      invalidateProductIndex();
       return { success: false, products: mockProducts, categories, message: result.message };
     }
   } catch (error) {

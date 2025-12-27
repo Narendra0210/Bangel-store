@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { X, Check, Clock } from "lucide-react";
+import { FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import {
   getCartItems,
   removeFromCart,
@@ -70,25 +73,58 @@ const OrderDetails = () => {
             setApiTotalPrice(null);
           }
           
-          // Merge API items with unchecked items
-          // Create a map of unchecked items by itemKey
+          // Merge API items with unchecked items while preserving order
+          // First, get the current localStorage cart to preserve order
+          const localCart = getCartItems();
+          const localCartMap = new Map();
+          localCart.forEach(item => {
+            const key = `${item.id}-${item.selectedSize || "default"}`;
+            localCartMap.set(key, item);
+          });
+          
+          // Create maps for API and unchecked items
           const uncheckedMap = new Map();
           uncheckedItemsList.forEach(item => {
             const key = `${item.id}-${item.selectedSize || "default"}`;
             uncheckedMap.set(key, item);
           });
           
-          // Create a set of API item keys for quick lookup
-          const apiItemKeys = new Set(
-            apiCartItems.map(item => `${item.id}-${item.selectedSize || "default"}`)
-          );
+          const apiItemsMap = new Map();
+          apiCartItems.forEach(item => {
+            const key = `${item.id}-${item.selectedSize || "default"}`;
+            apiItemsMap.set(key, item);
+          });
           
-          // Combine API items with unchecked items that are not in API response
-          const allItems = [...apiCartItems];
-          uncheckedMap.forEach((uncheckedItem, key) => {
-            // Only add if not already in API items
-            if (!apiItemKeys.has(key)) {
-              allItems.push(uncheckedItem);
+          // Preserve order from localStorage, but use API data when available
+          const allItems = [];
+          const processedKeys = new Set();
+          
+          // First, add items in localStorage order (preserving original order)
+          localCart.forEach(item => {
+            const key = `${item.id}-${item.selectedSize || "default"}`;
+            processedKeys.add(key);
+            // Use API item if available, otherwise use localStorage item
+            if (apiItemsMap.has(key)) {
+              allItems.push(apiItemsMap.get(key));
+            } else if (uncheckedMap.has(key)) {
+              allItems.push(uncheckedMap.get(key));
+            } else {
+              allItems.push(item);
+            }
+          });
+          
+          // Then add API items that aren't in localStorage
+          apiItemsMap.forEach((item, key) => {
+            if (!processedKeys.has(key)) {
+              allItems.push(item);
+              processedKeys.add(key);
+            }
+          });
+          
+          // Finally add unchecked items that aren't in localStorage or API
+          uncheckedMap.forEach((item, key) => {
+            if (!processedKeys.has(key)) {
+              allItems.push(item);
             }
           });
           
@@ -334,7 +370,33 @@ const OrderDetails = () => {
   const handleQuantityChange = async (productId, size, newQuantity) => {
     // Update localStorage immediately for responsive UI
     const updatedCart = updateCartItemQuantity(productId, size, newQuantity);
-    setCartItems(updatedCart);
+    
+    // Preserve the current order of cartItems when updating
+    // Create a map of updated cart items
+    const updatedCartMap = new Map();
+    updatedCart.forEach(item => {
+      const key = `${item.id}-${item.selectedSize || "default"}`;
+      updatedCartMap.set(key, item);
+    });
+    
+    // Rebuild cartItems array preserving original order, but with updated quantities
+    const reorderedItems = cartItems.map(item => {
+      const key = `${item.id}-${item.selectedSize || "default"}`;
+      return updatedCartMap.get(key) || item;
+    });
+    
+    // Add any new items that weren't in the original cartItems
+    updatedCart.forEach(item => {
+      const key = `${item.id}-${item.selectedSize || "default"}`;
+      const exists = cartItems.some(ci => 
+        `${ci.id}-${ci.selectedSize || "default"}` === key
+      );
+      if (!exists) {
+        reorderedItems.push(item);
+      }
+    });
+    
+    setCartItems(reorderedItems);
     
     // Find the item to get its price
     const item = updatedCart.find(
@@ -683,16 +745,14 @@ const OrderDetails = () => {
     },
     0
   );
-  // Hard code 10% discount for total amount
-  const totalDiscount = totalOriginalPrice * 0.10;
-  const platformFee = selectedItemsArray.length > 0 ? 23 : 0;
+  const platformFee = 0;
   
-  // Calculate total amount with 10% discount applied
+  // Calculate total amount
   // Use API total_price if available, otherwise calculate from selected items
-  const subtotalBeforeDiscount = (apiTotalPrice !== null && apiTotalPrice !== undefined && selectedItemsArray.length > 0)
+  const subtotal = (apiTotalPrice !== null && apiTotalPrice !== undefined && selectedItemsArray.length > 0)
     ? Number(apiTotalPrice)
     : totalOriginalPrice;
-  const totalAmount = subtotalBeforeDiscount - totalDiscount + platformFee;
+  const totalAmount = subtotal + platformFee;
 
   const getConfirmationMessage = () => {
     if (removeType === "single" && removeItemToDelete) {
@@ -755,13 +815,6 @@ const OrderDetails = () => {
             style={{ cursor: "pointer" }}
           >
             <span className="step-label">BAG</span>
-          </div>
-          <div 
-            className={`step ${currentStep === "payment" ? "active" : ""}`}
-            onClick={() => handleStepClick("payment")}
-            style={{ cursor: "pointer" }}
-          >
-            <span className="step-label">PAYMENT</span>
           </div>
         </div>
 
@@ -956,17 +1009,6 @@ const OrderDetails = () => {
                 </button>
               )}
 
-              {/* Continue Button */}
-              {addresses.length > 0 && selectedAddressId && (
-                <div className="address-actions">
-                  <button
-                    className="continue-btn"
-                    onClick={() => handleStepClick("payment")}
-                  >
-                    Continue to Payment
-                  </button>
-                </div>
-              )}
             </div>
           ) : (
             <>
@@ -1034,7 +1076,6 @@ const OrderDetails = () => {
                         <Link to={`/product/${item.id}`} className="cart-item-name-link">
                           <h3 className="cart-item-name">{item.name}</h3>
                         </Link>
-                        <p className="cart-item-seller">Sold by: AK Enterprises</p>
                         
                         <div className="cart-item-options">
                           {item.selectedSize && (
@@ -1061,9 +1102,12 @@ const OrderDetails = () => {
                               value={item.quantity || 1}
                               onChange={(e) => {
                                 if (isSelected) {
+                                  // Use the current item's ID and size to ensure we update the correct item
+                                  const currentItemId = item.id;
+                                  const currentItemSize = item.selectedSize || null;
                                   handleQuantityChange(
-                                    item.id,
-                                    item.selectedSize,
+                                    currentItemId,
+                                    currentItemSize,
                                     parseInt(e.target.value)
                                   );
                                 }
@@ -1092,12 +1136,14 @@ const OrderDetails = () => {
                           </div>
                         </div>
                       </div>
-                      <button
-                        className="remove-item-btn"
-                        onClick={() => handleRemoveItem(item.id, item.selectedSize)}
-                      >
-                        <X size={20} />
-                      </button>
+                      <div className="cart-item-remove">
+                        <button
+                          className="remove-item-btn"
+                          onClick={() => handleRemoveItem(item.id, item.selectedSize)}
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1122,16 +1168,9 @@ const OrderDetails = () => {
                   <span>Total Price</span>
                   <span >{formatPrice(totalOriginalPrice)}</span>
                 </div>
-                <div className="price-row discount-row">
-                  <span>Discount</span>
-                  <span className="discount-value">- {formatPrice(totalDiscount)}</span>
-                </div>
                 <div className="price-row">
                   <span>Platform Fee</span>
-                  <span>
-                    {formatPrice(platformFee)}
-                    <span className="know-more-link"> Know More</span>
-                  </span>
+                  <span>{formatPrice(platformFee)}</span>
                 </div>
               </div>
 
@@ -1157,21 +1196,22 @@ const OrderDetails = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <Link to="/order-details" className="nav-item active">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
-          {cartItems.length > 0 && (
-            <span className="cart-badge">
-              {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
-            </span>
-          )}
         </Link>
       </nav>
     </div>

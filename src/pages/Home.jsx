@@ -1,11 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { LogOut } from "lucide-react";
-import { FaRegHeart, FaHeart } from "react-icons/fa6";
+import { FaRegHeart, FaHeart, FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { getProductsByCategory, initializeProducts, getCategories } from "../services/productService";
 import { getCartCount } from "../services/cartService";
 import { isInWishlist, addToWishlist, removeFromWishlist } from "../services/wishlistService";
-import { searchProducts, debounce, getSearchSuggestions } from "../services/searchService";
+import { searchProducts } from "../services/searchService";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import Header from "../components/common/Header";
@@ -15,8 +17,6 @@ const Home = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [searchSuggestions, setSearchSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistUpdate, setWishlistUpdate] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -89,28 +89,13 @@ const Home = () => {
   const filteredProducts = useMemo(() => {
     if (searchQuery && searchQuery.trim() !== "") {
       // Search across all products when search query exists
-      return searchProducts(searchQuery, selectedCategory);
+      const searchResults = searchProducts(searchQuery, selectedCategory);
+      return searchResults.products || [];
     }
     // Otherwise show products by category
     // When "All" is selected, show all products
     return getProductsByCategory(selectedCategory);
   }, [searchQuery, selectedCategory, productsReady, loading]);
-
-  // Debounced search suggestions
-  const debouncedSearchSuggestions = useMemo(
-    () =>
-      debounce((query) => {
-        if (query && query.trim() !== "") {
-          const suggestions = getSearchSuggestions(query, 5);
-          setSearchSuggestions(suggestions);
-          setShowSuggestions(suggestions.length > 0);
-        } else {
-          setSearchSuggestions([]);
-          setShowSuggestions(false);
-        }
-      }, 300),
-    []
-  );
 
   // Handle search input change
   const handleSearchChange = (e) => {
@@ -123,22 +108,11 @@ const Home = () => {
     } else {
       setSearchParams({});
     }
-    
-    // Show suggestions
-    debouncedSearchSuggestions(value);
-  };
-
-  // Handle search suggestion click
-  const handleSuggestionClick = (suggestion) => {
-    setSearchQuery(suggestion.name);
-    setSearchParams({ q: suggestion.name });
-    setShowSuggestions(false);
   };
 
   // Handle search on Enter
   const handleSearchKeyPress = (e) => {
     if (e.key === "Enter") {
-      setShowSuggestions(false);
       if (searchQuery.trim() !== "") {
         setSearchParams({ q: searchQuery });
       }
@@ -157,22 +131,10 @@ const Home = () => {
       <Header
         pageType="home"
         showLocation={true}
-        showSearchSuggestions={true}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        searchSuggestions={searchSuggestions}
-        showSuggestions={showSuggestions}
         onSearchChange={handleSearchChange}
         onSearchKeyPress={handleSearchKeyPress}
-        onSuggestionClick={handleSuggestionClick}
-        onSearchFocus={() => {
-          if (searchSuggestions.length > 0) {
-            setShowSuggestions(true);
-          }
-        }}
-        onSearchBlur={() => {
-          setTimeout(() => setShowSuggestions(false), 200);
-        }}
         searchPlaceholder="Search for products..."
         categories={categories}
         selectedCategory={selectedCategory}
@@ -263,11 +225,15 @@ const Home = () => {
       {/* Bottom Navigation */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item active">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <div className="nav-item" onClick={() => navigate("/wishlist")}>
@@ -277,11 +243,10 @@ const Home = () => {
           <span className="nav-label">Wishlist</span>
         </div>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
-          {cartCount > 0 && (
-            <span className="cart-badge">{cartCount}</span>
-          )}
         </Link>
         <div className="nav-item logout-item" onClick={handleLogout}>
           <span className="nav-icon">

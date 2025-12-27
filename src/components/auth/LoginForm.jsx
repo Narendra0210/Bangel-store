@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { IoMail } from "react-icons/io5";
+import { RiLockPasswordFill } from "react-icons/ri";
 import Input from "../common/Input";
 import Button from "../common/Button";
 import { loginUser } from "../../services/authService";
@@ -72,12 +75,8 @@ const LoginForm = ({ switchToRegister }) => {
         placeholder="Enter Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        icon="📧"
+        icon={<IoMail size={20} />}
       />
-
-      <div className="forgot-password">
-        <span>Forgot Password?</span>
-      </div>
 
       <Input
         label="Password"
@@ -85,8 +84,8 @@ const LoginForm = ({ switchToRegister }) => {
         placeholder="Enter Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        icon="🔒"
-        rightIcon={showPassword ? "🙈" : "👁️"}
+        icon={<RiLockPasswordFill size={20} />}
+        rightIcon={showPassword ? <FaEye /> : <FaEyeSlash />}
         onRightIconClick={() => setShowPassword(!showPassword)}
       />
 

@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { useAuth } from "../context/AuthContext";
 import { fetchUserOrders } from "../services/orderService";
 import { useToast } from "../context/ToastContext";
@@ -87,12 +90,6 @@ const OrderHistory = () => {
 
       <div className="order-history-container">
         <div className="order-history-header">
-          <button
-            className="back-button"
-            onClick={() => navigate("/profile")}
-          >
-            ← Back to Profile
-          </button>
           <h1 className="order-history-title">Order History</h1>
         </div>
 
@@ -161,15 +158,21 @@ const OrderHistory = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item active">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
         </Link>
       </nav>

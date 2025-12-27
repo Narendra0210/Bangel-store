@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { FaCartShopping, FaRegHeart, FaHeart } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
+import { RiBox3Fill } from "react-icons/ri";
+import { LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getCartItems, getCartCount, getCartTotal, getCartCountFromAPI } from "../services/cartService";
 import { getWishlistItems } from "../services/wishlistService";
@@ -105,7 +110,9 @@ const Profile = () => {
       <div className="profile-container">
         <div className="profile-header">
           <div className="profile-avatar">
-            <span className="avatar-icon">👤</span>
+            <span className="avatar-icon">
+              <CgProfile size={40} />
+            </span>
           </div>
           <div className="profile-info">
             <h1 className="profile-name">
@@ -118,7 +125,9 @@ const Profile = () => {
 
         <div className="profile-stats">
           <div className="stat-card" onClick={() => navigate("/order-details")}>
-            <div className="stat-icon">🛒</div>
+            <div className="stat-icon">
+              <FaCartShopping size={24} style={{ color: "black" }} />
+            </div>
             <div className="stat-info">
               <div className="stat-value">{cartCount}</div>
               <div className="stat-label">Cart Items</div>
@@ -127,7 +136,9 @@ const Profile = () => {
           </div>
 
           <div className="stat-card" onClick={() => navigate("/wishlist")}>
-            <div className="stat-icon">❤️</div>
+            <div className="stat-icon">
+              <FaHeart size={24} style={{ color: "red" }} />
+            </div>
             <div className="stat-info">
               <div className="stat-value">{wishlistCount}</div>
               <div className="stat-label">Wishlist Items</div>
@@ -135,7 +146,9 @@ const Profile = () => {
           </div>
 
           <div className="stat-card" onClick={() => navigate("/order-history")}>
-            <div className="stat-icon">📦</div>
+            <div className="stat-icon">
+              <RiBox3Fill size={24} style={{ color: "black" }} />
+            </div>
             <div className="stat-info">
               <div className="stat-value">{ordersCount}</div>
               <div className="stat-label">Orders</div>
@@ -176,28 +189,36 @@ const Profile = () => {
               className="action-btn primary"
               onClick={() => navigate("/order-details")}
             >
-              <span className="action-icon">🛒</span>
+              <span className="action-icon">
+                <FaCartShopping size={20} />
+              </span>
               View Cart
             </button>
             <button
               className="action-btn"
               onClick={() => navigate("/wishlist")}
             >
-              <span className="action-icon">❤️</span>
+              <span className="action-icon">
+                <FaRegHeart size={20} />
+              </span>
               View Wishlist
             </button>
             <button
               className="action-btn"
               onClick={() => navigate("/home")}
             >
-              <span className="action-icon">🏠</span>
+              <span className="action-icon">
+                <IoHome size={20} />
+              </span>
               Continue Shopping
             </button>
             <button
               className="action-btn logout-btn"
               onClick={handleLogout}
             >
-              <span className="action-icon">🚪</span>
+              <span className="action-icon">
+                <LogOut size={20} />
+              </span>
               Logout
             </button>
           </div>

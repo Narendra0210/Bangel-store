@@ -24,20 +24,41 @@ const SellerRoute = ({ children }) => {
   console.log("SellerRoute - User:", user);
   console.log("SellerRoute - User Role:", user?.role);
   
-  // Check authentication first
-  if (!isAuthenticated) {
+  // Check localStorage directly to avoid race condition on page reload
+  const authData = localStorage.getItem("auth");
+  let storedUser = null;
+  if (authData) {
+    try {
+      const parsed = JSON.parse(authData);
+      storedUser = parsed.user;
+    } catch (e) {
+      console.error("Error parsing auth data:", e);
+    }
+  }
+  
+  // Use storedUser if user is not yet loaded from context
+  const currentUser = user || storedUser;
+  
+  // Check authentication first (check both context and localStorage)
+  if (!isAuthenticated && !authData) {
     console.log("Not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }
   
+  // Wait for user data to be loaded if we have auth data but no user yet
+  if (authData && !currentUser) {
+    // Still loading user data, return null to prevent redirect
+    return null;
+  }
+  
   // Check if user is seller based on role from API
-  const userRole = user?.role;
+  const userRole = currentUser?.role;
   const isSeller = userRole === 'seller';
   
   console.log("SellerRoute - Is Seller:", isSeller);
   
-  // Redirect non-sellers to home
-  if (!isSeller) {
+  // Redirect non-sellers to home (only if user data is loaded)
+  if (currentUser && !isSeller) {
     console.log("User is not a seller, redirecting to home");
     return <Navigate to="/home" replace />;
   }

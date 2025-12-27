@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { X } from "lucide-react";
-import { FaRegHeart, FaHeart } from "react-icons/fa6";
+import { FaRegHeart, FaHeart, FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { getWishlistItems, removeFromWishlist, isInWishlist, fetchWishlistItemsFromAPI } from "../services/wishlistService";
 import { addToCart, getCartCount } from "../services/cartService";
 import { searchProducts } from "../services/searchService";
@@ -287,11 +289,15 @@ const Wishlist = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <div className="nav-item active" onClick={() => navigate("/wishlist")}>
@@ -301,11 +307,10 @@ const Wishlist = () => {
           <span className="nav-label">Wishlist</span>
         </div>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
-          {cartCount > 0 && (
-            <span className="cart-badge">{cartCount}</span>
-          )}
         </Link>
       </nav>
     </div>

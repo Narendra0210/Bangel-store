@@ -47,13 +47,17 @@ export const addItemToCartAPI = async (userId, productId, quantity, price) => {
 export const addToCart = async (product, size = null, quantity = 1, userId = null) => {
   // First, update localStorage immediately for responsive UI
   const cart = getCartItems();
+  // Normalize size for consistent comparison
+  const normalizedSize = size || "default";
   const existingItemIndex = cart.findIndex(
-    (item) => item.id === product.id && item.selectedSize === size
+    (item) => item.id === product.id && (item.selectedSize || "default") === normalizedSize
   );
 
   if (existingItemIndex >= 0) {
+    // Item exists - increase quantity but preserve position in array
     cart[existingItemIndex].quantity += quantity;
   } else {
+    // New item - add to end to preserve order
     cart.push({
       ...product,
       selectedSize: size,
@@ -79,8 +83,10 @@ export const addToCart = async (product, size = null, quantity = 1, userId = nul
 
 export const removeFromCart = (productId, size = null) => {
   const cart = getCartItems();
+  // Normalize size to "default" if null/undefined for consistent comparison
+  const normalizedSize = size || "default";
   const filteredCart = cart.filter(
-    (item) => !(item.id === productId && item.selectedSize === size)
+    (item) => !(item.id === productId && (item.selectedSize || "default") === normalizedSize)
   );
   localStorage.setItem("cart", JSON.stringify(filteredCart));
   return filteredCart;
@@ -88,8 +94,10 @@ export const removeFromCart = (productId, size = null) => {
 
 export const updateCartItemQuantity = (productId, size, quantity) => {
   const cart = getCartItems();
+  // Normalize size to "default" if null/undefined for consistent comparison
+  const normalizedSize = size || "default";
   const itemIndex = cart.findIndex(
-    (item) => item.id === productId && item.selectedSize === size
+    (item) => item.id === productId && (item.selectedSize || "default") === normalizedSize
   );
 
   if (itemIndex >= 0) {
@@ -106,7 +114,23 @@ export const updateCartItemQuantity = (productId, size, quantity) => {
 
 export const getCartCount = () => {
   const cart = getCartItems();
-  return cart.reduce((total, item) => total + item.quantity, 0);
+  
+  // Get unchecked items from localStorage
+  const savedUncheckedItems = localStorage.getItem("uncheckedCartItems");
+  const uncheckedItems = savedUncheckedItems ? JSON.parse(savedUncheckedItems) : [];
+  
+  // Create a set of unchecked item keys for quick lookup
+  const uncheckedKeys = new Set(
+    uncheckedItems.map(item => `${item.id}-${item.selectedSize || "default"}`)
+  );
+  
+  // Filter out unchecked items and count only checked items
+  const checkedItems = cart.filter(item => {
+    const itemKey = `${item.id}-${item.selectedSize || "default"}`;
+    return !uncheckedKeys.has(itemKey);
+  });
+  
+  return checkedItems.reduce((total, item) => total + item.quantity, 0);
 };
 
 // Get cart count from API (for real-time count from server)

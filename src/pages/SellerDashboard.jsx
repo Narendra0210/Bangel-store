@@ -28,10 +28,26 @@ const SellerDashboard = () => {
     console.log("SellerDashboard mounted");
     console.log("User:", user);
     
+    // Prevent back navigation
+    const handlePopState = (event) => {
+      // Push the current state back to prevent navigation
+      window.history.pushState(null, "", window.location.href);
+    };
+
+    // Push a new state to history to prevent back navigation
+    window.history.pushState(null, "", window.location.href);
+    
+    // Listen for popstate events (back/forward button)
+    window.addEventListener("popstate", handlePopState);
+    
     loadOrders();
     // Refresh orders every 30 seconds
     const interval = setInterval(loadOrders, 30000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("popstate", handlePopState);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,7 +159,7 @@ const SellerDashboard = () => {
           <div className="header-content">
             <h1 className="dashboard-title">Seller Dashboard</h1>
             <div className="header-actions">
-              <span className="seller-name">Welcome, {user?.name || user?.full_name || "Seller"}</span>
+              <span className="seller-name">Welcome, {(user?.name || user?.full_name || "Seller").toUpperCase()}</span>
               <button className="logout-btn" onClick={logout}>
                 Logout
               </button>
@@ -165,7 +181,7 @@ const SellerDashboard = () => {
         <div className="header-content">
           <h1 className="dashboard-title">Seller Dashboard</h1>
           <div className="header-actions">
-            <span className="seller-name">Welcome, {user?.name || user?.full_name || "Seller"}</span>
+            <span className="seller-name">Welcome, {(user?.name || user?.full_name || "Seller").toUpperCase()}</span>
             <button className="logout-btn" onClick={logout}>
               Logout
             </button>

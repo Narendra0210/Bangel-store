@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Clock, CheckCircle, Package, Truck } from "lucide-react";
+import { FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { fetchOrderById } from "../services/orderService";
 import { addToCart, getCartCount, getCartCountFromAPI } from "../services/cartService";
 import { getProductImage } from "../services/productService";
@@ -435,13 +438,6 @@ const OrderedItems = () => {
         <div className="order-details-container">
           <div className="empty-cart">
             <p>Order not found</p>
-            <button
-              className="continue-shopping-btn"
-              onClick={() => navigate("/order-history")}
-              style={{ background: "#ec4899", color: "white", border: "none", padding: "12px 24px", borderRadius: "8px", cursor: "pointer" }}
-            >
-              Back to Order History
-            </button>
           </div>
         </div>
       </div>
@@ -462,13 +458,6 @@ const OrderedItems = () => {
       <div className="order-details-container">
         {/* Order Header */}
         <div className="order-header-section">
-          <button
-            className="back-button"
-            onClick={() => navigate("/order-history")}
-            style={{ background: "none", border: "none", color: "#ec4899", cursor: "pointer", fontSize: "14px", fontWeight: "600", marginBottom: "20px" }}
-          >
-            ← Back to Order History
-          </button>
           <div className="order-header-card">
             <div className="order-header-info">
               <h2 className="order-number-title">Order #{order.order_number || order.order_id}</h2>
@@ -565,7 +554,6 @@ const OrderedItems = () => {
                         <Link to={`/product/${itemId}`} className="cart-item-name-link">
                           <h3 className="cart-item-name">{item.item_name || item.name}</h3>
                         </Link>
-                        <p className="cart-item-seller">Sold by: AK Enterprises</p>
                         
                         <div className="cart-item-options">
                           {item.size && (
@@ -674,19 +662,22 @@ const OrderedItems = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
-          {cartCount > 0 && (
-            <span className="cart-badge">{cartCount}</span>
-          )}
         </Link>
       </nav>
     </div>

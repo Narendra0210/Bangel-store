@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { getProductById, initializeProducts, getCategoriesWithIcons } from "../services/productService";
 import { addToCart, getCartCount, getCartCountFromAPI } from "../services/cartService";
 import { ShoppingBag, LogOut } from "lucide-react";
-import { FaRegHeart, FaHeart } from "react-icons/fa6";
+import { FaRegHeart, FaHeart, FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { isInWishlist, addToWishlist, removeFromWishlist } from "../services/wishlistService";
+import { getSearchSuggestions, debounce } from "../services/searchService";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import Header from "../components/common/Header";
@@ -20,6 +23,8 @@ const ProductDetail = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [inWishlist, setInWishlist] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -74,6 +79,36 @@ const ProductDetail = () => {
     window.addEventListener("wishlistUpdated", handleWishlistUpdate);
     return () => window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
   }, [product]);
+
+  // Debounced search suggestions for autocomplete
+  const debouncedSearchSuggestions = useMemo(
+    () =>
+      debounce((query) => {
+        if (query && query.trim() !== "") {
+          const suggestions = getSearchSuggestions(query, 5);
+          setSearchSuggestions(suggestions);
+          setShowSuggestions(suggestions.length > 0);
+        } else {
+          setSearchSuggestions([]);
+          setShowSuggestions(false);
+        }
+      }, 150),
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    debouncedSearchSuggestions(value);
+  };
+
+  // Handle search suggestion click
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion.name);
+    setShowSuggestions(false);
+    navigate(`/product/${suggestion.id}`);
+  };
 
   if (!product) {
     return (
@@ -136,17 +171,32 @@ const ProductDetail = () => {
     <div className="product-detail-page">
       <Header
         pageType="product"
+        showSearchSuggestions={true}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        onSearchChange={(e) => setSearchQuery(e.target.value)}
+        searchSuggestions={searchSuggestions}
+        showSuggestions={showSuggestions}
+        onSearchChange={handleSearchChange}
         onSearchKeyPress={(e) => {
           if (e.key === "Enter") {
+            setShowSuggestions(false);
             if (searchQuery.trim() !== "") {
               navigate(`/home?q=${encodeURIComponent(searchQuery)}`);
             } else {
               navigate("/home");
             }
           }
+        }}
+        onSuggestionClick={handleSuggestionClick}
+        onSearchFocus={() => {
+          if (searchSuggestions.length > 0) {
+            setShowSuggestions(true);
+          }
+        }}
+        onSearchBlur={() => {
+          // Shorter delay on desktop for better single-click experience
+          const isDesktop = window.innerWidth >= 768;
+          setTimeout(() => setShowSuggestions(false), isDesktop ? 100 : 200);
         }}
         searchPlaceholder="Search for products..."
         categories={categories}
@@ -191,19 +241,6 @@ const ProductDetail = () => {
                 )}
               </button>
             </div>
-            {product.images && product.images.length > 1 && (
-              <div className="thumbnail-images">
-                {product.images.map((img, index) => (
-                  <div
-                    key={index}
-                    className={`thumbnail ${selectedImageIndex === index ? "active" : ""}`}
-                    onClick={() => setSelectedImageIndex(index)}
-                  >
-                    <img src={img} alt={`${product.name} ${index + 1}`} />
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Product Details */}
@@ -269,18 +306,6 @@ const ProductDetail = () => {
                 BUY NOW
               </button>
             </div>
-
-            {/* Delivery Options */}
-            <div className="delivery-options">
-              <div className="delivery-header">
-                <span className="delivery-icon">🚚</span>
-                <span className="delivery-title">DELIVERY OPTIONS</span>
-              </div>
-              <div className="delivery-info">
-                <p>Free delivery on orders above ₹500</p>
-                <p>Express delivery available</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -288,11 +313,15 @@ const ProductDetail = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item active">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <div className="nav-item" onClick={() => navigate("/wishlist")}>
@@ -302,11 +331,10 @@ const ProductDetail = () => {
           <span className="nav-label">Wishlist</span>
         </div>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
-          {cartCount > 0 && (
-            <span className="cart-badge">{cartCount}</span>
-          )}
         </Link>
         <div className="nav-item logout-item" onClick={handleLogout}>
           <span className="nav-icon">

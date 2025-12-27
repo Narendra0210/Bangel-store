@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Check, CreditCard, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { FaCartShopping } from "react-icons/fa6";
+import { CgProfile } from "react-icons/cg";
+import { IoHome } from "react-icons/io5";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { createRazorpayOrder, verifyPayment } from "../services/paymentService";
@@ -331,43 +334,6 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Payment Methods Card */}
-        <div className="payment-methods-card">
-          <h3 className="methods-title">Select Payment Method</h3>
-          <div className="payment-methods-list">
-            <div className="payment-method-item selected">
-              <div className="method-icon">
-                <CreditCard size={24} />
-              </div>
-              <div className="method-details">
-                <span className="method-name">Credit/Debit Card</span>
-                <span className="method-description">Pay securely with your card</span>
-              </div>
-              <div className="method-check">
-                <Check size={20} />
-              </div>
-            </div>
-            <div className="payment-method-item">
-              <div className="method-icon">
-                <CreditCard size={24} />
-              </div>
-              <div className="method-details">
-                <span className="method-name">UPI</span>
-                <span className="method-description">Pay using UPI apps</span>
-              </div>
-            </div>
-            <div className="payment-method-item">
-              <div className="method-icon">
-                <CreditCard size={24} />
-              </div>
-              <div className="method-details">
-                <span className="method-name">Net Banking</span>
-                <span className="method-description">Pay using your bank account</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Security Notice */}
         <div className="security-notice">
           <Lock size={16} />
@@ -392,15 +358,21 @@ const Payment = () => {
       {/* Bottom Navigation - Mobile Only */}
       <nav className="bottom-nav">
         <Link to="/home" className="nav-item">
-          <span className="nav-icon">🏠</span>
+          <span className="nav-icon">
+            <IoHome size={22} />
+          </span>
           <span className="nav-label">Home</span>
         </Link>
         <Link to="/profile" className="nav-item">
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon">
+            <CgProfile size={22} />
+          </span>
           <span className="nav-label">Profile</span>
         </Link>
         <Link to="/order-details" className="nav-item">
-          <span className="nav-icon">🛒</span>
+          <span className="nav-icon">
+            <FaCartShopping size={22} />
+          </span>
           <span className="nav-label">Cart</span>
         </Link>
       </nav>
