@@ -26,7 +26,7 @@ const RegisterForm = ({ switchToLogin }) => {
       if (response.success) {
         // Registration successful - show success message and redirect to login
         // Don't auto-login since verification email is sent
-        showToast(response.message || "Registration successful! Please check your email for verification.", "success");
+        showToast("Email has been sent to the registered email id. Please verify that before login.", "success");
         // Switch to login form after a short delay
         setTimeout(() => {
           switchToLogin();
